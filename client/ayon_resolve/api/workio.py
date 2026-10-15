@@ -60,12 +60,16 @@ def save_file(filepath):
 
     rename_db_project = settings["resolve"].get("rename_db_project_on_increment", True)
     if "Untitled Project" in current_wf.stem:
-        # saving initial workfile from currently opened project
-        project_manager.CreateProject(incoming_wf.stem)
+        # saving initial workfile from currently opened project.
+        # CreateProject closes the untitled project, so `resolve_project`
+        # is stale from here on and must not be used again.
+        if not project_manager.CreateProject(incoming_wf.stem):
+            log.error(f"Failed to create project {incoming_wf.stem}!")
+            return False
         project_manager.SaveProject()
         exported = project_manager.ExportProject(incoming_wf.stem, incoming_wf.as_posix())
         log.info(f"New project {incoming_wf.stem} exported: {exported}")
-    if current_wf.stem != incoming_wf.stem:
+    elif current_wf.stem != incoming_wf.stem:
         # workfile shall be incremented
         if rename_db_project:
             # increment with local renaming
